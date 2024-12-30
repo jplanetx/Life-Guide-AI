@@ -1,0 +1,15 @@
+exclude: &excludes '^(frontend/node_modules/|backend/node_modules/|frontend/build/|backend/venv/)'
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+    -   id: trailing-whitespace
+        exclude: *excludes
+    -   id: end-of-file-fixer
+        exclude: *excludes
+    -   id: check-yaml
+        exclude: *excludes
+    -   id: check-added-large-files
+        exclude: *excludes
+    -   id: detect-private-key
+        exclude: *excludes
