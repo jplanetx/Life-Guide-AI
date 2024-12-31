@@ -12,3 +12,5 @@ isort==5.13.2
 pre-commit==3.6.0
 detect-secrets==1.4.0
 bandit==1.7.6
+slowapi==0.1.8
+python-jose[cryptography]==3.3.0

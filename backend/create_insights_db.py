@@ -1,8 +1,13 @@
 from notion_client import Client
 import os
+from dotenv import load_dotenv
+
+# Load .env file
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
 # Initialize Notion client
-notion = Client(auth='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')
+notion = Client(auth=os.getenv('NOTION_API_KEY'))
 
 # Database schema
 properties = {
@@ -44,7 +49,7 @@ properties = {
 # Create database
 try:
     response = notion.databases.create(
-        parent={"page_id": "0e8cefd185144f0ab7df0ba10c835542"},
+        parent={"page_id": os.getenv('NOTION_PARENT_PAGE_ID', '0e8cefd185144f0ab7df0ba10c835542')},
         title=[{"type": "text", "text": {"content": "AI Coach Insights"}}],
         properties=properties
     )

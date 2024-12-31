@@ -5,10 +5,10 @@ from datetime import datetime
 
 class NotionClient:
     def __init__(self, settings):
-        self.client = AsyncClient(auth=settings.notion_api_key)
-        self.sync_client = SyncClient(auth=settings.notion_api_key)
-        self.tasks_db_id = settings.notion_tasks_database_id
-        self.projects_db_id = settings.notion_projects_database_id
+        self.client = AsyncClient(auth=settings.NOTION_API_KEY)
+        self.sync_client = SyncClient(auth=settings.NOTION_API_KEY)
+        self.tasks_db_id = settings.NOTION_TASKS_DATABASE_ID
+        self.projects_db_id = settings.NOTION_PROJECTS_DATABASE_ID
 
     async def get_tasks(self, status: Optional[str] = None) -> List[Dict]:
         query = {}
