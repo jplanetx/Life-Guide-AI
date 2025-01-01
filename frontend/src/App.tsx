@@ -1,13 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import DashboardLayout from './components/DashboardLayout';
 import { EisenhowerMatrix } from './components/EisenhowerMatrix';
-import { fetchTasks } from './services/notionService';
-import type { Task } from './types';
+import TaskDetails from './components/TaskDetails';
+import { taskService, Task } from './services/TaskService';
+import { Plus, Loader } from 'lucide-react';
 
 const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
     loadTasks();
@@ -15,72 +18,101 @@ const App: React.FC = () => {
 
   const loadTasks = async () => {
     try {
-      // Only show loading state if we don't have any tasks yet
-      if (tasks.length === 0) {
-        setLoading(true);
-      }
-      const fetchedTasks = await fetchTasks();
-      setTasks(fetchedTasks);
-      setLastUpdated(new Date());
+      console.log('Starting to load tasks...'); // Debug log
+      setIsLoading(true);
       setError(null);
+      const loadedTasks = await taskService.getAllTasks();
+      console.log('Loaded tasks:', loadedTasks); // Debug log
+      setTasks(loadedTasks);
+      console.log('Tasks set in state:', loadedTasks.length); // Debug log
     } catch (err) {
-      setError('Failed to load tasks. Please try again.');
       console.error('Error loading tasks:', err);
+      setError('Failed to load tasks. Please try again.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setIsDetailsOpen(true);
+  };
+
+  const handleTaskSave = async (updatedTask: Task) => {
+    try {
+      await taskService.updateTask(updatedTask.id, updatedTask);
+      await loadTasks();
+      setIsDetailsOpen(false);
+    } catch (err) {
+      console.error('Error updating task:', err);
+    }
+  };
+
+  const handleAddTask = async () => {
+    try {
+      const newTask = {
+        title: 'New Task',
+        importance: 'Medium' as const,
+        urgency: 'Medium' as const,
+        status: 'Not Started',
+      };
+
+      const createdTask = await taskService.addTask(newTask);
+      console.log('Created new task:', createdTask); // Debug log
+      setTasks([...tasks, createdTask]);
+      setSelectedTask(createdTask);
+      setIsDetailsOpen(true);
+    } catch (err) {
+      console.error('Error creating task:', err);
+    }
+  };
+
+  // Debug log to check current state
+  console.log('Current tasks in state:', tasks);
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-6 px-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                AI Coach
-              </h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Viewing {tasks.length} active tasks from Notion
-                {lastUpdated && ` • Last updated ${lastUpdated.toLocaleTimeString()}`}
-              </p>
-            </div>
-            <button
-              onClick={loadTasks}
-              disabled={loading}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                loading
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-              }`}
-            >
-              {loading ? 'Loading...' : 'Refresh Tasks'}
-            </button>
-          </div>
+    <DashboardLayout>
+      <div className="h-full flex flex-col">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">Task Management</h1>
+          <button
+            onClick={handleAddTask}
+            className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            <Plus size={20} />
+            <span>Add Task</span>
+          </button>
         </div>
-      </header>
-      <main className="max-w-7xl mx-auto py-6 px-4">
-        {loading && tasks.length === 0 ? (
-          <div className="flex justify-center items-center h-64">
-            <p className="text-lg text-gray-600">Loading tasks...</p>
-          </div>
-        ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800">{error}</p>
-            <button
-              onClick={loadTasks}
-              className="mt-2 px-4 py-2 bg-red-100 text-red-800 rounded hover:bg-red-200"
-            >
-              Retry
-            </button>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <Loader className="animate-spin" size={32} />
           </div>
         ) : (
-          <div className={loading ? 'opacity-50' : ''}>
-            <EisenhowerMatrix tasks={tasks} />
+          <>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                Total tasks: {tasks.length}
+              </p>
+            </div>
+            <EisenhowerMatrix
+              tasks={tasks}
+              onTaskClick={handleTaskClick}
+            />
+          </>
+        )}
+
+        {isDetailsOpen && (
+          <div className="fixed right-0 top-0 h-full w-80 bg-white shadow-lg">
+            <TaskDetails
+              task={selectedTask}
+              onClose={() => setIsDetailsOpen(false)}
+              onSave={handleTaskSave}
+            />
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
 
